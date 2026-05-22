@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -587,7 +587,7 @@ function toggleReview(){
   list.innerHTML='';
   sessionLog.forEach((item,i)=>{
     const div=document.createElement('div');
-    div.className='review-item'+(item.skipped?' skipped':item.correct?'',' wrong');
+    div.className='review-item'+(item.skipped?' skipped':item.correct?'':' wrong');
     div.innerHTML=`
       <div class="review-q">${item.skipped?'⏰':item.correct?'✅':'❌'} Q${i+1}: ${item.q}</div>
       ${!item.correct&&!item.skipped?`<div class="review-your">Your answer: ${item.yourAns.join(' + ')}</div>`:''}

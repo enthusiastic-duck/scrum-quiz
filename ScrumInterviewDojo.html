@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scrum Interview Dojo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #111111;
+  --surface: #191919;
+  --surface2: #222222;
+  --border: #2e2e2e;
+  --gold: #f0a500;
+  --gold-dim: #a07000;
+  --green: #00c48c;
+  --red: #e05260;
+  --text: #f0f0ee;
+  --muted: #888;
+  --mono: 'IBM Plex Mono', monospace;
+  --head: 'Bebas Neue', sans-serif;
+  --body: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--body); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+/* ── TIMER BAR ── */
+#timerBar { position: fixed; top: 0; left: 0; height: 3px; background: var(--gold); width: 100%; transform-origin: left; transition: width 1s linear; z-index: 100; }
+
+/* ── SCREENS ── */
+.screen { display: none; min-height: 100vh; padding: 32px 24px; max-width: 800px; margin: 0 auto; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── HOME ── */
+#home { justify-content: center; align-items: flex-start; gap: 0; padding-top: 80px; }
+.dojo-label { font-family: var(--mono); font-size: 12px; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 16px; }
+.dojo-title { font-family: var(--head); font-size: clamp(64px, 10vw, 96px); line-height: 0.92; color: var(--text); margin-bottom: 8px; }
+.dojo-title span { color: var(--gold); }
+.dojo-sub { font-size: 17px; color: var(--muted); max-width: 480px; line-height: 1.6; margin-bottom: 48px; margin-top: 20px; }
+.stats-row { display: flex; gap: 32px; margin-bottom: 56px; flex-wrap: wrap; }
+.stat { border-left: 2px solid var(--gold); padding-left: 16px; }
+.stat-n { font-family: var(--head); font-size: 40px; color: var(--text); line-height: 1; }
+.stat-l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
+.home-progress { margin-bottom: 40px; }
+.home-progress-label { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.home-progress-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; max-width: 400px; }
+.home-progress-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.6s ease; }
+.home-progress-pct { font-family: var(--mono); font-size: 12px; color: var(--gold); margin-top: 6px; }
+.start-btn { font-family: var(--head); font-size: 24px; letter-spacing: 2px; background: var(--gold); color: #111; border: none; padding: 18px 56px; cursor: pointer; transition: transform 0.15s, background 0.15s; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+.start-btn:hover { background: #ffc107; transform: translateY(-2px); }
+.score-note { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 20px; }
+
+/* ── QUESTION ── */
+#question { padding-top: 56px; justify-content: flex-start; gap: 0; }
+.q-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+.round-badge { font-family: var(--head); font-size: 52px; color: var(--gold); line-height: 1; }
+.round-badge span { font-family: var(--mono); font-size: 13px; color: var(--muted); display: block; line-height: 1; letter-spacing: 2px; text-transform: uppercase; }
+.timer-display { text-align: right; }
+.timer-num { font-family: var(--head); font-size: 48px; color: var(--text); line-height: 1; }
+.timer-num.warn { color: #e17055; }
+.timer-num.crit { color: var(--red); animation: pulse 0.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.timer-label { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+
+.q-divider { height: 1px; background: var(--border); margin-bottom: 32px; }
+
+.q-tag { font-family: var(--mono); font-size: 11px; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+.q-text { font-family: var(--mono); font-size: 17px; line-height: 1.65; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--gold); padding: 24px; margin-bottom: 32px; font-style: italic; }
+
+.answer-label { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.word-count { color: var(--gold); transition: color 0.3s; }
+.word-count.ideal { color: var(--green); }
+.word-count.long { color: var(--red); }
+.answer-area { width: 100%; min-height: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 0; color: var(--text); font-family: var(--body); font-size: 16px; line-height: 1.7; padding: 20px; resize: vertical; outline: none; transition: border-color 0.2s; }
+.answer-area:focus { border-color: var(--gold); }
+.answer-area::placeholder { color: #444; }
+
+.q-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 12px; }
+.guidance { font-family: var(--mono); font-size: 11px; color: #555; max-width: 400px; line-height: 1.5; }
+.submit-btn { font-family: var(--head); font-size: 22px; letter-spacing: 2px; background: var(--gold); color: #111; border: none; padding: 14px 40px; cursor: pointer; transition: transform 0.15s, background 0.15s; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+.submit-btn:hover:not(:disabled) { background: #ffc107; transform: translateY(-2px); }
+.submit-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+/* ── RESULT ── */
+#result { padding-top: 56px; justify-content: flex-start; }
+.result-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; gap: 24px; flex-wrap: wrap; }
+.score-block { text-align: left; }
+.score-big { font-family: var(--head); font-size: 96px; line-height: 0.9; }
+.score-big.excellent { color: var(--green); }
+.score-big.good { color: var(--gold); }
+.score-big.fair { color: #e17055; }
+.score-big.poor { color: var(--red); }
+.score-label { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+.grade-stamp { font-family: var(--head); font-size: 64px; border: 4px solid; padding: 8px 20px; line-height: 1; transform: rotate(-8deg); margin-top: 8px; }
+.grade-stamp.A { color: var(--green); border-color: var(--green); }
+.grade-stamp.B { color: var(--gold); border-color: var(--gold); }
+.grade-stamp.C { color: #e17055; border-color: #e17055; }
+.grade-stamp.D { color: var(--red); border-color: var(--red); }
+
+.breakdown-section { background: var(--surface); border: 1px solid var(--border); padding: 24px; margin-bottom: 24px; }
+.breakdown-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; }
+.score-bar-row { margin-bottom: 16px; }
+.score-bar-label { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin-bottom: 6px; font-family: var(--mono); font-size: 12px; }
+.score-bar-label span:last-child { color: var(--text); }
+.score-bar-track { height: 8px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+.fill-content { background: var(--gold); }
+.fill-concise { background: var(--green); }
+.fill-structure { background: #63a4ff; }
+
+.keywords-section { margin-bottom: 24px; }
+.kw-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+.kw-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.kw-chip { font-family: var(--mono); font-size: 12px; padding: 4px 12px; border-radius: 2px; }
+.kw-hit { background: rgba(0, 196, 140, 0.15); color: var(--green); border: 1px solid rgba(0,196,140,0.3); }
+.kw-hit::before { content: '✓ '; }
+.kw-miss { background: rgba(224, 82, 96, 0.1); color: var(--red); border: 1px solid rgba(224,82,96,0.25); }
+.kw-miss::before { content: '✗ '; }
+
+.model-section { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #63a4ff; padding: 20px; margin-bottom: 28px; }
+.model-title { font-family: var(--mono); font-size: 11px; color: #63a4ff; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 12px; }
+.model-text { font-size: 14px; line-height: 1.7; color: #ccc; }
+
+.result-footer { display: flex; gap: 16px; flex-wrap: wrap; }
+.next-btn { font-family: var(--head); font-size: 22px; letter-spacing: 2px; background: var(--gold); color: #111; border: none; padding: 14px 40px; cursor: pointer; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); transition: transform 0.15s, background 0.15s; }
+.next-btn:hover { background: #ffc107; transform: translateY(-2px); }
+
+/* ── SUMMARY ── */
+#summary { padding-top: 56px; justify-content: flex-start; }
+.summary-title { font-family: var(--head); font-size: 72px; line-height: 0.9; margin-bottom: 8px; }
+.summary-title span { color: var(--gold); }
+.summary-sub { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 40px; }
+.session-score-row { display: flex; align-items: baseline; gap: 16px; margin-bottom: 40px; }
+.session-score { font-family: var(--head); font-size: 80px; color: var(--gold); line-height: 1; }
+.session-avg { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+.q-log { margin-bottom: 40px; }
+.q-log-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 14px; }
+.q-log-row { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.q-log-row:first-child { border-top: 1px solid var(--border); }
+.q-log-num { font-family: var(--head); font-size: 22px; color: var(--muted); min-width: 36px; }
+.q-log-q { flex: 1; color: #aaa; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-log-score { font-family: var(--mono); font-size: 14px; font-weight: 600; min-width: 50px; text-align: right; }
+.again-btn { font-family: var(--head); font-size: 24px; letter-spacing: 2px; background: var(--gold); color: #111; border: none; padding: 18px 56px; cursor: pointer; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); transition: transform 0.15s, background 0.15s; }
+.again-btn:hover { background: #ffc107; transform: translateY(-2px); }
+
+/* ── NOISE TEXTURE ── */
+body::before { content:''; position:fixed; inset:0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; opacity:0.4; }
+.screen { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+<div id="timerBar"></div>
+
+<!-- HOME -->
+<div class="screen active" id="home">
+  <div class="dojo-label">Interview Preparation System</div>
+  <div class="dojo-title">SCRUM<br><span>DOJO</span></div>
+  <div class="dojo-sub">Master Agile metrics, velocity, burndown, and estimation concepts through text-based interview practice. AI-scored answers, rotating questions.</div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-n">50</div><div class="stat-l">Questions</div></div>
+    <div class="stat"><div class="stat-n">10</div><div class="stat-l">Per Session</div></div>
+    <div class="stat"><div class="stat-n">2m</div><div class="stat-l">Per Answer</div></div>
+  </div>
+  <div class="home-progress">
+    <div class="home-progress-label">Overall Progress</div>
+    <div class="home-progress-track"><div class="home-progress-fill" id="homeFill" style="width:0%"></div></div>
+    <div class="home-progress-pct" id="homePct">0 of 50 questions seen</div>
+  </div>
+  <button class="start-btn" onclick="startSession()">BEGIN TRAINING</button>
+  <div class="score-note" id="bestNote"></div>
+</div>
+
+<!-- QUESTION -->
+<div class="screen" id="question">
+  <div class="q-header">
+    <div class="round-badge"><span>Round</span><span id="roundNum">01 / 10</span></div>
+    <div class="timer-display">
+      <div class="timer-num" id="timerNum">2:00</div>
+      <div class="timer-label">Remaining</div>
+    </div>
+  </div>
+  <div class="q-divider"></div>
+  <div class="q-tag" id="qTag">Velocity &amp; Metrics</div>
+  <div class="q-text" id="qText">Loading question...</div>
+  <div class="answer-label">
+    <span>Your Answer</span>
+    <span class="word-count" id="wordCount">0 words</span>
+  </div>
+  <textarea class="answer-area" id="answerArea" placeholder="Type your answer here. Aim for 60–150 words — the length of a confident, clear 2-minute verbal response.&#10;&#10;Structure tip: Set the context → Describe your approach → State the outcome or principle." oninput="onType()"></textarea>
+  <div class="q-footer">
+    <div class="guidance">60–150 words ideal · Cover key concepts · Show your reasoning</div>
+    <button class="submit-btn" id="submitBtn" onclick="submitAnswer()" disabled>SUBMIT →</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="result">
+  <div class="result-header">
+    <div class="score-block">
+      <div class="score-big" id="scoreBig">74</div>
+      <div class="score-label">/ 100 points</div>
+    </div>
+    <div class="grade-stamp" id="gradeStamp">B</div>
+  </div>
+  <div class="breakdown-section">
+    <div class="breakdown-title">Score Breakdown</div>
+    <div class="score-bar-row">
+      <div class="score-bar-label"><span>Content &amp; Concepts</span><span id="scoreContent">0 / 60</span></div>
+      <div class="score-bar-track"><div class="score-bar-fill fill-content" id="barContent" style="width:0%"></div></div>
+    </div>
+    <div class="score-bar-row">
+      <div class="score-bar-label"><span>Conciseness</span><span id="scoreConcise">0 / 20</span></div>
+      <div class="score-bar-track"><div class="score-bar-fill fill-concise" id="barConcise" style="width:0%"></div></div>
+    </div>
+    <div class="score-bar-row">
+      <div class="score-bar-label"><span>Structure (STAR)</span><span id="scoreStructure">0 / 20</span></div>
+      <div class="score-bar-track"><div class="score-bar-fill fill-structure" id="barStructure" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="keywords-section">
+    <div class="kw-title">Concept Coverage</div>
+    <div class="kw-grid" id="kwHits"></div>
+    <div class="kw-grid" id="kwMisses"></div>
+  </div>
+  <div class="model-section">
+    <div class="model-title">Key Points to Cover</div>
+    <div class="model-text" id="modelText"></div>
+  </div>
+  <div class="result-footer">
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">NEXT CHALLENGE →</button>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="screen" id="summary">
+  <div class="summary-title">SESSION<br><span>COMPLETE</span></div>
+  <div class="summary-sub">Mission Debrief</div>
+  <div class="session-score-row">
+    <div class="session-score" id="sessionScore">0</div>
+    <div class="session-avg" id="sessionAvg">avg score</div>
+  </div>
+  <div class="q-log">
+    <div class="q-log-title">Question Log</div>
+    <div id="qLogList"></div>
+  </div>
+  <button class="again-btn" onclick="goHome()">NEW SESSION →</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// QUESTION BANK — 50 Questions from the document
+// ══════════════════════════════════════════════════════
+const QUESTIONS = [
+  {
+    id:1, tag:"Velocity & Metrics",
+    q:"How do you identify whether a team's rising velocity indicates genuine improvement or hidden velocity inflation?",
+    keywords:["cycle time","Definition of Done","estimation drift","horizontal slices","vertical slices","stakeholder perception","throughput","story points"],
+    model:"Check cycle time — genuine improvement shows stable or decreasing cycle time alongside rising velocity. Verify DoD adherence (no skipped tests or deferred integration). Look for estimation drift by comparing new estimates against reference stories. Watch for horizontal slicing (separate frontend/backend/testing items) which inflates velocity without end-to-end value. Finally, stakeholder perception is a key signal — if they still report limited progress despite velocity rising, it's likely inflation."
+  },
+  {
+    id:2, tag:"Velocity & Metrics",
+    q:"When a team consistently delivers more work than originally planned, should future sprint commitments increase automatically? Why or why not?",
+    keywords:["forecasting tool","not performance benchmark","fear-based","under-commitment","sustainable pace","environmental factors","transparency","sprint planning"],
+    model:"No — velocity is a forecasting tool, not a performance benchmark. Auto-increasing commitments can reinforce fear-based behavior where teams under-commit to avoid visible failure. Over-delivery often stems from better story refinement or unusually favorable conditions (fewer interruptions, resolved dependencies), not a true capacity increase. The team should decide during Sprint Planning based on observed stability — not externally imposed."
+  },
+  {
+    id:3, tag:"Story Splitting",
+    q:"In what ways can poor or incorrect story-splitting practices distort velocity trends?",
+    keywords:["horizontal slices","frontend backend testing","late splitting","spillover","estimation inconsistency","vertical slices","customer value","flow"],
+    model:"Horizontal splitting (separating frontend, backend, testing) inflates velocity with no end-to-end customer value. Late sprint splitting to avoid spillover distorts both velocity and burndown. Inconsistent slicing makes point totals meaningless — a 5-point story split into two 3-point slices inflates velocity without extra effort. Improper slicing also disrupts flow and makes impediments harder to detect. Vertical slices that deliver independent value are the corrective standard."
+  },
+  {
+    id:4, tag:"Velocity Validation",
+    q:"If a team's velocity increases by 50% in one sprint, what specific checks would you perform to validate the cause?",
+    keywords:["capacity","Definition of Done","estimation patterns","cycle time","reference stories","quality indicators","defect rates","rollover stories"],
+    model:"First check capacity — was availability unusually high? Then verify DoD adherence — were testing, integration, or documentation skipped? Review estimation patterns against reference stories for drift. Check cycle time — genuine improvement shows faster flow. Look for stories that rolled over from the prior sprint creating a spike. Finally check defect rates — a true velocity increase doesn't come with a quality decline."
+  },
+  {
+    id:5, tag:"Velocity & DoD",
+    q:"How do you handle partially completed stories at the end of a sprint when calculating velocity?",
+    keywords:["not counted","Definition of Done","returned to backlog","Product Owner","vertical slices","retrospective","spillover","integrity"],
+    model:"Partially completed stories are not counted toward velocity — a story must fully meet the Definition of Done. The unfinished story returns to the Product Backlog where the PO decides its priority. Splitting is allowed only for genuine vertical slices, not to retroactively claim points. Spillover is a signal to examine story sizing, refinement quality, WIP levels, and impediment response in the retrospective."
+  },
+  {
+    id:6, tag:"Story Splitting",
+    q:"Can a team artificially inflate velocity by breaking requirements into smaller stories? What are the impacts?",
+    keywords:["horizontal splitting","end-to-end value","predictability","trust erosion","vanity metric","transparency","velocity distortion","customer outcomes"],
+    model:"Yes — horizontal splitting (frontend/backend/testing as separate items) creates velocity without delivering complete value. The impacts are serious: predictability declines because fragmented estimates lose meaning, burndowns no longer reflect real progress, stakeholders receive misleading delivery health signals, and trust erodes when velocity rises but value doesn't. Proper vertical slicing delivers independent, testable value and keeps velocity a meaningful metric."
+  },
+  {
+    id:7, tag:"Estimation",
+    q:"How do you estimate work when the Definition of Done is unclear or ambiguous?",
+    keywords:["pause estimation","spike","surface assumptions","risk buffer","acceptance criteria","retrospective","shared understanding","provisional estimate"],
+    model:"The first step is to pause estimation and surface hidden assumptions — does 'done' include regression tests? Integration? Documentation? If ambiguity can't be resolved immediately, create a spike to clarify uncertainty. When immediate estimation is unavoidable, explicitly account for risk with a higher point value and flag it as provisional. Use retrospectives to standardize missing DoD elements. Accurate estimation requires a stable, shared Definition of Done."
+  },
+  {
+    id:8, tag:"Estimation",
+    q:"How do you normalize velocity when story-point estimation is inconsistent across items?",
+    keywords:["reference stories","recalibration","refinement quality","transparency","behavioral not mathematical","not retroactive","future sprints","stakeholders informed"],
+    model:"Normalization is behavioral, not mathematical. Revisit reference stories to re-anchor the estimation scale. Improve refinement quality — thorough discussions on acceptance criteria and dependencies produce more consistent estimates. Don't retroactively adjust past story points; focus on future consistency. Inform stakeholders that inconsistency affected velocity trends and that recalibration is underway. Velocity stabilizes over subsequent sprints as estimation discipline returns."
+  },
+  {
+    id:9, tag:"Velocity Reporting",
+    q:"How do you report velocity when the team completes committed work but pulls in additional scope mid-sprint?",
+    keywords:["all completed work counts","two-part reporting","committed vs additional","not sustainable capacity","transparency","multiple sprint trends","forecasting integrity"],
+    model:"All completed work meeting the DoD contributes to velocity regardless of when it was added. However, report in two parts: committed work completed and additional work pulled in. This prevents the impression that the team planned more than it committed to. Avoid assuming additional work means higher sustainable capacity — it often reflects unusual conditions. Velocity trends should be evaluated across multiple sprints, not isolated events."
+  },
+  {
+    id:10, tag:"Stakeholder Management",
+    q:"How do you prevent management from misusing story points as a measurement of delivery speed or effort?",
+    keywords:["complexity uncertainty effort","not time","alternative metrics","cycle time throughput","cross-team comparison invalid","Sprint Review","value delivered","outcomes over outputs"],
+    model:"Educate management that story points measure relative complexity and uncertainty — not hours or productivity. Introduce more meaningful metrics: cycle time, throughput, defect rates, and predictability. Discourage cross-team velocity comparisons since each team's calibration is unique. Redirect focus to Sprint Reviews where actual value is demonstrated. Reframe the question from 'how many points?' to 'what value was delivered?' to align leadership with outcome-focused thinking."
+  },
+  {
+    id:11, tag:"Estimation",
+    q:"Why is converting story points to hours unreliable, and how would you explain this to stakeholders?",
+    keywords:["fundamentally different concepts","relative complexity","variable factors","empirical planning","velocity trends","not elapsed time","individual differences","forecasting"],
+    model:"Story points measure relative complexity; hours measure elapsed time — they're fundamentally different. Hours fail in uncertain environments because individual pace, domain familiarity, and unforeseen complexity all vary. Attempting conversion creates false precision. Explain to stakeholders that velocity trends across sprints provide more accurate forecasting than hour estimates. Story points support empirical planning — not deterministic prediction. The answer to 'when will it be done?' is velocity-based forecasting, not point-to-hour conversion."
+  },
+  {
+    id:12, tag:"Coaching",
+    q:"How do you respond when a developer directly equates a story point value to a fixed number of hours?",
+    keywords:["misunderstanding","complexity not time","individual speed varies","pressure transparency","reference stories","relative estimation","collective planning","coaching"],
+    model:"Address it with a coaching conversation rather than correction. Story points acknowledge complexity, not personal speed — one developer may take 2 hours on a task another takes 4, yet the complexity is identical. Equating points to hours introduces artificial pressure and reduces honesty. Guide the developer to compare stories against reference items instead. Emphasize that estimation is a collective, collaborative tool — not an individual time contract."
+  },
+  {
+    id:13, tag:"Stakeholder Management",
+    q:"How do you prevent management from misusing story points as a performance metric?",
+    keywords:["forecasting not productivity","education","cycle time throughput defect rates","cross-team comparison invalid","Sprint Review outcomes","psychological safety","alternative metrics","behaviors"],
+    model:"Provide clear education: story points forecast, they don't measure performance. When management uses them as output metrics, teams inflate estimates and compromise quality. Introduce cycle time, throughput, defect rates, and customer satisfaction as better performance signals. Strongly discourage cross-team velocity comparisons — baselines are team-specific. Encourage leadership to attend Sprint Reviews and focus on value delivered. Psychological safety is key: teams estimate honestly only when points aren't used against them."
+  },
+  {
+    id:14, tag:"Estimation",
+    q:"Is it valid to use hours per story point for sprint forecasting? Why or why not?",
+    keywords:["not valid","conflicts with relative estimation","uniformity assumption","distorts velocity","empirical forecasting","historical velocity","dynamic environments","knowledge work"],
+    model:"No — hours per story point is not a valid forecasting approach. It forces a uniformity assumption that doesn't hold in knowledge work where different developers, contexts, and complexities affect actual time. It distorts velocity by encouraging teams to adjust point values to match expected hour ratios. Empirical forecasting using historical velocity trends is far more reliable. Story points must remain independent of hours; their purpose is to support planning through observed throughput, not speculative duration."
+  },
+  {
+    id:15, tag:"Velocity & Teams",
+    q:"How do you compare velocity across teams that use story points differently?",
+    keywords:["never compare","inherently relative","predictability","flow metrics","cycle time throughput","shared estimation alignment","not standardized","forecasting tool not comparison"],
+    model:"Velocity should never be compared across teams — story points are inherently relative and team-specific. A 5-point story in one team may reflect completely different complexity in another. Instead, focus on predictability — does each team consistently deliver within its forecast? For cross-team insights, use flow metrics like cycle time, throughput, and lead time which are objective. If teams must share a backlog, align estimation through shared reference stories. Velocity is a forecasting tool, not a benchmarking mechanism."
+  },
+  {
+    id:16, tag:"Estimation",
+    q:"How do you estimate work when the Definition of Done is unclear or ambiguous? (Advanced)",
+    keywords:["surface hidden assumptions","testing coverage","integration requirements","spike","risk accounted in estimate","provisional","structural gap","shared standard"],
+    model:"Estimation without a clear DoD is speculative. The team must first surface hidden assumptions — developers may assume unit tests only, testers expect regression coverage, POs expect acceptance environment validation. If ambiguity persists, introduce a spike. If estimation is unavoidable, assign a higher estimate reflecting uncertainty and mark it provisional. Treat a persistently unclear DoD as a structural gap requiring retrospective action, not just a one-time workaround."
+  },
+  {
+    id:17, tag:"Burndown Charts",
+    q:"What does it indicate when a burndown chart stays flat for most of the sprint and drops sharply at the end?",
+    keywords:["late testing","work in progress","dependency issues","large stories","story slicing","incremental progress","predictability","flow problems"],
+    model:"A flat-then-steep burndown is a flow problem signal. The most common cause is late testing — development completes but testing happens in bulk at the end. High WIP also causes this: team members start multiple stories but complete none until late. External dependencies can block completion. Oversized stories that can't be finished in a few days also contribute. The fix involves earlier testing, WIP limits, smaller vertical slices, and stronger cross-functional collaboration throughout the sprint."
+  },
+  {
+    id:18, tag:"Forecasting",
+    q:"How do you forecast release timelines when velocity is highly unpredictable?",
+    keywords:["probabilistic forecasting","not deterministic","velocity range not average","Monte Carlo simulation","confidence intervals","root causes","iterative forecasting","stakeholder trust"],
+    model:"Shift from deterministic to probabilistic forecasting. First investigate root causes of instability: poor refinement, architectural uncertainty, production interruptions, unclear DoD. Use a velocity range from recent sprints rather than the average, which is skewed by outliers. Monte Carlo simulation models thousands of scenarios using past velocity distributions, producing confidence intervals (e.g., 50% and 85% confidence dates). Update forecasts iteratively as conditions change. Present probability ranges to stakeholders rather than fixed dates."
+  },
+  {
+    id:19, tag:"Velocity & DoD",
+    q:"How do you report velocity when stories marked Done fail during QA checks?",
+    keywords:["reopen story","remove story points","true Definition of Done","root cause","transparent Sprint Review","completed work only","process improvement","quality"],
+    model:"A story that fails QA was never truly Done — its points must be removed from the sprint's velocity. Reopen the story and return it to the appropriate workflow stage. Investigate the root cause: unclear acceptance criteria, insufficient developer-tester collaboration, or weak DoD. Communicate transparently at Sprint Review — stakeholders must understand the impact. If QA failures are recurring, the team needs structural improvements in refinement, early testing, or DoD clarity."
+  },
+  {
+    id:20, tag:"Velocity Reporting",
+    q:"How do you report on velocity when the team completes fewer points than forecast but delivers higher business value?",
+    keywords:["output vs outcome","value delivered","strategic goals","complex work underestimated","planning tool not performance","Sprint Review emphasis","estimation refinement","impact"],
+    model:"Velocity is a planning tool, not a performance indicator. Report the story points completed accurately, but shift the Sprint Review narrative to the value delivered — how completed items contribute to strategic goals, customer satisfaction, or risk mitigation. Explain that high-value work often carries greater complexity and may be underestimated. A sprint delivering fewer points but significant impact is highly successful. Revisit estimation practices if high-complexity stories are consistently underestimated."
+  },
+  {
+    id:21, tag:"Burndown Charts",
+    q:"What can cause a burndown chart to show negative remaining points, and how should it be interpreted?",
+    keywords:["scope modified incorrectly","stories removed not marked done","re-estimation post-commitment","process smell","sprint integrity","backlog management","administrative issue","not exceptional performance"],
+    model:"Negative burndown points are a process smell, not exceptional performance. They occur when stories are deleted from the sprint instead of being marked complete (the system recalculates the baseline), or when story points are reduced after work has started. This reflects issues in sprint integrity and backlog management discipline. Teams should ensure stories are never removed mid-sprint, point values are not altered after commitment, and all work completes according to DoD."
+  },
+  {
+    id:22, tag:"Burndown Charts",
+    q:"How do you interpret inconsistencies between burndown charts and completed velocity?",
+    keywords:["late testing integration","high WIP","DoD inconsistently applied","flow issues","handoff delays","bottleneck","not performance failure","workflow analysis"],
+    model:"A flat burndown with normal end-of-sprint velocity signals unhealthy flow, not failure. Late testing is the most common cause — development progresses but work doesn't reach Done until bulk testing occurs at the end. High WIP creates the same pattern — nothing completes until a bottleneck clears. Sometimes the DoD is applied inconsistently, with developers calling items done before PO or tester validation. These are flow discipline issues requiring WIP limits, earlier testing, and clearer handoff agreements."
+  },
+  {
+    id:23, tag:"Burndown Charts",
+    q:"How does spillover from a previous sprint affect the next sprint's burndown chart?",
+    keywords:["higher starting value","distorted interpretation","near-complete early drop","planning signal","oversized stories","acceptance criteria","communicate clearly","Sprint Planning priority"],
+    model:"Spillover increases the new sprint's starting work total, which can distort interpretation. If carried-over stories are nearly complete, an early sharp burndown drop may give a false impression of rapid progress. Spillover should not be normalized — it's feedback to improve planning and story sizing. In Sprint Planning, transparently discuss carried-over work and prioritize it before new commitments. Recurring spillover signals stories are too large, acceptance criteria unclear, or complexity is consistently underestimated."
+  },
+  {
+    id:24, tag:"Burndown Charts",
+    q:"Why might remaining work increase mid-sprint on a burndown chart?",
+    keywords:["new items added","acceptance criteria expanded","defects added","scope creep","Product Owner accepts new requests","discovery","Sprint Planning breakdown","boundary management"],
+    model:"Remaining work increases when new items are added to the sprint backlog. Common causes: unforeseen tasks discovered during development, acceptance criteria expanded after better understanding, defects added as new items, or scope creep from the Product Owner accepting stakeholder requests without removing equivalent work. Some increases reflect legitimate discovery; others expose gaps in Sprint Planning or boundary management. Root cause matters — agreed essential additions differ fundamentally from unchecked scope creep."
+  },
+  {
+    id:25, tag:"Sprint Management",
+    q:"How should urgent unplanned work be reflected on sprint tracking charts?",
+    keywords:["Product Owner evaluates priority","add to sprint backlog","estimate appropriately","burndown reflects increase","DoD still applies","velocity accuracy","frequency analysis","capacity planning"],
+    model:"Urgent work must be evaluated by the Product Owner for genuine priority. If accepted, it enters the sprint backlog with a proper estimate — the burndown chart rises to reflect expanded scope. This maintains transparency and prevents the false impression that the team is failing on planned work. Velocity records only work meeting DoD. If bringing in urgent work jeopardizes original commitments, discuss this at Sprint Review. Recurring unplanned work is a signal for better capacity planning and production stability."
+  },
+  {
+    id:26, tag:"Burndown Charts",
+    q:"How do you handle a burndown chart when a single story is completed in slices across multiple days?",
+    keywords:["flat until complete","story sizing too large","vertical slicing","task boards sub-tasks","no partial credit","steady flow","transparency without false credit","incremental progress"],
+    model:"The burndown stays flat until the full story meets the DoD — this is correct behavior. A story taking multiple days without burndown movement signals it's too large. The recommended fix is vertical slicing — smaller pieces each delivering independently verifiable value. If splitting isn't immediately feasible, use task boards or sub-task checklists for internal transparency, but never claim partial burndown credit. The goal is a steady flow of completed increments, which requires disciplined story sizing from the start."
+  },
+  {
+    id:27, tag:"Burndown & Velocity",
+    q:"What metrics do you examine when a team's burndown chart appears smooth, yet velocity drops significantly?",
+    keywords:["cycle time rising","WIP levels","handoff delays","defect trends","story-level completion","bottleneck","workflow analysis","root cause"],
+    model:"A smooth burndown with declining velocity means tasks are progressing but stories aren't reaching Done. First examine cycle time — rising or erratic cycle time reveals workflow stalls even when tasks complete daily. Check WIP levels — high WIP masks bottlenecks where team members complete tasks but no story finishes. Investigate handoff delays between development, testing, and PO validation. Review defect trends — late-discovered defects force rework delaying story completion. These are story-level flow issues, not surface-activity problems."
+  },
+  {
+    id:28, tag:"Forecasting",
+    q:"How do you forecast release timelines when velocity is highly unpredictable due to external dependencies?",
+    keywords:["map dependencies","lead time reliability criticality","pessimistic realistic optimistic","Monte Carlo","confidence intervals","dependency uncertainty","iterative recalibration","probability ranges not fixed dates"],
+    model:"Map all dependencies and classify them by lead time, reliability, and criticality. Assess the historical performance of external teams or systems to understand realistic delay ranges. Use probabilistic rather than deterministic forecasting — model pessimistic, realistic, and optimistic scenarios. Monte Carlo simulation incorporates dependency uncertainty by modeling delay probability distributions, producing confidence intervals. Present ranges (50% / 85% confidence) to stakeholders. Recalibrate forecasts continuously as dependencies resolve or new risks emerge."
+  },
+  {
+    id:29, tag:"Estimation",
+    q:"How do you estimate a backlog when one story lacks clarity but others are well defined?",
+    keywords:["avoid premature estimation","engage Product Owner","spike","provisional marked explicitly","exception not norm","separate unclear stories","process improvement","integrity"],
+    model:"Don't estimate unclear stories prematurely — it undermines sprint planning reliability. Engage the Product Owner to clarify acceptance criteria, business rules, and constraints. For technical ambiguity, introduce a spike to reduce uncertainty before estimation. If long-range planning requires an immediate size, assign a provisional estimate explicitly marked for refinement — treat this as the exception. Use the presence of unclear stories as a process improvement signal: refine earlier and involve cross-functional perspectives sooner."
+  },
+  {
+    id:30, tag:"Estimation",
+    q:"How do you estimate non-functional requirements (NFRs) such as performance, security, or reliability?",
+    keywords:["separate backlog item","relative estimation","acceptance criteria integrated","spike for unknowns","first-class work items","technical quality","multiple stories","design constraints"],
+    model:"Self-contained NFRs (e.g., implementing encryption) should be separate backlog items estimated like any story using relative complexity. NFRs affecting multiple stories should be embedded as acceptance criteria within those stories, with estimates reflecting both functional and non-functional effort. When the team lacks sufficient information, introduce a spike to explore design constraints, tooling, and performance baselines. Treating NFRs as first-class backlog items ensures technical quality is visible, planned, and consistently delivered."
+  },
+  {
+    id:31, tag:"Estimation",
+    q:"How do you estimate work when multiple developers collaborate part-time on the same story?",
+    keywords:["complexity not availability","coordination overhead","not convert availability to points","vertical slices","uncertainty increases","part-time risk","inherent complexity","forecasting"],
+    model:"Story points measure complexity, not developer availability. The estimate should not change based on how many people work on it or their availability percentage. However, part-time collaboration introduces coordination overhead, context switching, and handoff risk — these increase uncertainty and may warrant a higher estimate. Don't convert developer hours into points. Instead, consider whether vertical slicing could allow more independent work with less coordination. The estimate reflects the story's inherent complexity including collaboration challenges."
+  },
+  {
+    id:32, tag:"Estimation",
+    q:"How do you estimate technical spikes, research tasks, or discovery work that has no predictable outcome?",
+    keywords:["time-box not story points","clear objective defined scope","clarified requirements","nominal point value","exclude from velocity forecasting","learning not output","document findings","downstream estimation"],
+    model:"Spikes should be time-boxed with a clear objective and fixed duration — the team commits to the time-box, not specific outcomes. The outcome should be clarified requirements, validated assumptions, or architectural insights that enable accurate estimation of downstream work. If visibility is needed, assign a nominal point value reflecting expected duration, but exclude it from velocity forecasting. Spikes are learning activities, not delivery stories — estimating them identically distorts velocity and reduces predictability of future work."
+  },
+  {
+    id:33, tag:"Team Dynamics",
+    q:"How do you detect intentional underestimation designed to boost perceived velocity?",
+    keywords:["sudden point pattern shifts","reference story comparison","consistent delivery no spillover","psychological response pressure","safe stories over meaningful work","psychological safety","planning tool not metric","estimation culture"],
+    model:"Watch for sudden downward shifts in story-point patterns without corresponding complexity reduction — compare against reference stories to reveal inconsistencies. Be alert when teams consistently complete all committed work with zero spillover despite complex items — this suggests deliberately conservative estimates to appear predictable. Burndown patterns with minimal mid-sprint discovery may indicate teams are selecting safe, small stories over meaningful work. Retrospective language like 'we can't afford to miss our commitment' is a cultural signal. The fix is psychological safety and reinforcing that velocity is a planning tool, not a performance measure."
+  },
+  {
+    id:34, tag:"Estimation",
+    q:"How do you normalize velocity if a team purposely estimates high due to uncertainty?",
+    keywords:["improve refinement quality","recalibrate reference stories","not retroactive","future sprints stabilize","stakeholder communication","root causes uncertainty","shared understanding","consistent calibration"],
+    model:"Address the root cause — uncertainty — rather than adjusting velocity numbers. Improve refinement so stories are clearer before estimation sessions. Recalibrate against reference stories through collaborative discussion to rebuild shared understanding of small, medium, and large work. Don't retroactively adjust past estimates; let future sprints reflect improved practices and allow velocity to stabilize naturally. Communicate transparently with stakeholders that estimation inflation stemmed from uncertainty, not genuine capacity increase."
+  },
+  {
+    id:35, tag:"Estimation",
+    q:"Is Fibonacci-based estimation suitable in highly predictable environments?",
+    keywords:["increasing uncertainty assumption","simplified scale","predictable low uncertainty","not necessarily abandon","work nature alignment","consistent calibration","exponential gaps","team comfort"],
+    model:"Fibonacci is designed for environments with increasing uncertainty as size grows. In highly predictable environments with routine, well-understood work, the exponential gaps between Fibonacci numbers may be unnecessarily granular. A simpler scale (1, 2, 3, 5) could provide sufficient differentiation without encouraging overestimation. However, if the team is comfortable and well-calibrated with Fibonacci, abandoning it isn't necessary. What matters is that the estimation scale aligns with the actual uncertainty of the work and produces consistent, reliable forecasting."
+  },
+  {
+    id:36, tag:"Capacity Planning",
+    q:"How do you calculate real development capacity when team members multitask across several projects?",
+    keywords:["nominal vs effective capacity","context switching","50% allocation yields less","historical delivery empirical","limit WIP","smaller slices","workflow design","observation-based"],
+    model:"Theoretical allocation rarely matches real capacity. A developer allocated 50% across two projects may actually contribute only 20-30% effective output due to context switching, coordination overhead, and re-orientation time. Calculate real capacity through observation — track actual completed work across several stable sprints to establish an empirical baseline. Avoid large stories that require extended focus when team availability is fragmented; prefer smaller slices. The structural solution is limiting WIP and reducing concurrent projects, not expecting higher efficiency from individuals."
+  },
+  {
+    id:37, tag:"Velocity & Quality",
+    q:"How do you incorporate defect workload from previous sprints into velocity?",
+    keywords:["backlog items with estimates","same standards as user stories","DoD applies","avoid bypassing estimation","volatile velocity signal","retrospective root cause","transparency Product Owner","forecasting accuracy"],
+    model:"Defects from past sprints must be treated as backlog items — estimated, prioritized, and completed according to the DoD, just like any user story. Once completed, their story points contribute to velocity. Never bypass estimation for defects; doing so inflates velocity without adjusting capacity assumptions. High defect volume signals quality debt — this should be analyzed in retrospectives to find root causes in refinement, testing strategy, or DoD adherence. Inform the Product Owner clearly when significant capacity is consumed by defect resolution rather than new features."
+  },
+  {
+    id:38, tag:"Scaling",
+    q:"How do you aggregate velocity across multiple Scrum teams working from a shared backlog?",
+    keywords:["shared estimation scale","reference story alignment","joint refinement","combined velocity range","vertical slicing ownership","release-level only","not for team comparison","transparency cross-team"],
+    model:"Summing velocities across teams only works if they share a common estimation scale calibrated through shared reference stories and joint refinement. Use velocity ranges, not single averages, as individual team velocities fluctuate. Ensure vertical slicing with clear single-team ownership to prevent double-counting. Aggregated velocity should be used exclusively for release-level forecasting — never for comparing teams or measuring performance, which triggers estimation distortion and competitive behavior."
+  },
+  {
+    id:39, tag:"Scaling",
+    q:"How do you avoid double-counting effort when multiple teams contribute to the same feature?",
+    keywords:["vertical slicing","single team ownership","supporting work as tasks","cross-team refinement workshops","distinct deliverables","dependencies documented","no shared story ownership","transparent forecasting"],
+    model:"The primary defense is vertical slicing with clear single-team ownership. Each story should be owned and delivered by exactly one team; collaboration from other teams is handled as supporting tasks within the owning team's story — not as separate estimatable stories. Cross-team refinement workshops help identify unclear ownership boundaries and ensure each story represents a distinct deliverable. Explicitly document dependencies. Double-counting inflates velocity, distorts release plans, and erodes stakeholder confidence in forecasting."
+  },
+  {
+    id:40, tag:"Leadership",
+    q:"How do you respond when leadership requests all teams to deliver a fixed velocity target, such as 50 points per sprint?",
+    keywords:["misunderstanding of velocity","estimation inflation quality compromise","relative not comparable","predictability outcomes","alternative metrics","counterproductive behaviors","education evidence-based","outcomes not outputs"],
+    model:"Fixed velocity targets reflect a misunderstanding of what velocity measures. Respond with education and evidence: velocity is a planning tool based on historical throughput, unique to each team. Mandating a target causes inflation, quality shortcuts, and reduced transparency. Different teams naturally vary in velocity due to differences in domain, stack, and estimation baselines. Redirect leadership toward meaningful metrics: predictability, cycle time, defect rates, and customer outcomes. Productivity improves through better refinement and reduced dependencies — not by raising a number."
+  },
+  {
+    id:41, tag:"Forecasting",
+    q:"How do you adjust release forecasts when team velocity drops due to holidays or reduced capacity?",
+    keywords:["quantify capacity reduction","skills distribution","proportional adjustment","communicate transparently","Monte Carlo reduced range","sustainable pace","quality protection","not just headcount"],
+    model:"Don't just count headcount — identify whether absent team members hold specialized skills critical for certain stories. Apply a proportional velocity adjustment based on the reduction in available capacity, using it as a starting point, not a guarantee. Communicate the revised forecast transparently to stakeholders, including the trade-offs. Attempting to maintain original commitments with reduced capacity leads to rushed work and quality compromise. Monte Carlo simulation with reduced velocity ranges can provide stakeholders with realistic confidence intervals for the adjusted timeline."
+  },
+  {
+    id:42, tag:"Stakeholder Management",
+    q:"How do you report velocity dips without triggering unnecessary concern from leadership?",
+    keywords:["natural variability","contextualize causes","multi-sprint trend view","correlate with known events","value delivered emphasis","improvement actions","data-driven discussion","not underperformance"],
+    model:"Frame velocity dips as natural Agile variability, not underperformance. Present multi-sprint trend views (6-8 sprints) to reduce emotional reactions to single-sprint outcomes. Correlate dips with known events — new member onboarding, technical debt work, production incidents, or dependency delays. Emphasize the value delivered in the sprint even when points appear low. If the dip reveals structural issues, present concrete improvement actions. This demonstrates proactive management and maintains leadership trust without misrepresenting reality."
+  },
+  {
+    id:43, tag:"Estimation",
+    q:"How do story points work when multiple designers, testers, and developers collaborate on the same story?",
+    keywords:["collective complexity not head count","coordination overhead","cross-functional natural","all participate estimation","comprehensive perspectives","not siloed estimates","communication factors","consistent forecasting"],
+    model:"Story points measure the total complexity of the story, not the number of roles involved. Whether two or eight people contribute, the estimate reflects collective complexity relative to other backlog items. Cross-functional collaboration is natural in Agile — story points deliberately abstract away siloed task estimates. However, high coordination requirements or significant unknowns across disciplines may increase the estimate. All disciplines — designers, testers, developers — should participate in estimation to ensure a comprehensive, multi-perspective understanding."
+  },
+  {
+    id:44, tag:"Leadership",
+    q:"How do you respond when leadership requests all teams to deliver a fixed velocity target such as fifty points per sprint? (Advanced scenario)",
+    keywords:["misunderstanding metrics","unique per team","predictability not velocity magnitude","business outcomes","counterproductive estimation inflation","cycle time throughput","value-focused indicators","integrity of planning"],
+    model:"A fixed velocity mandate misunderstands Agile metrics. Each team's velocity is unique — different tools, domain expertise, and estimation baselines mean teams naturally operate at different velocities. A team delivering 30 points predictably may outperform one forced to hit 50 with inflated estimates. Redirect leadership toward predictability and business outcomes. Offer alternative metrics: cycle time, throughput, defect trends, and customer satisfaction. Preserving estimation integrity ensures reliable planning — the opposite of what fixed targets achieve."
+  },
+  {
+    id:45, tag:"Velocity & Quality",
+    q:"How do you incorporate defect workload from previous sprints into velocity? (Governance perspective)",
+    keywords:["same refinement standards","Definition of Done","estimate consistently","distinguish feature vs defect velocity","quality debt signal","stakeholder transparency","root cause","capacity proportion"],
+    model:"Defects require the same discipline as feature work — estimation, refinement, and DoD adherence. Once completed, they contribute to velocity. The critical governance point is separating feature velocity from defect velocity in reporting so stakeholders understand how much capacity is consumed by stabilization versus new value delivery. Recurring defect spikes signal quality debt and must be analyzed for root causes. Transparency here is essential — the PO must understand the true proportion of capacity devoted to defect resolution."
+  },
+  {
+    id:46, tag:"Capacity Planning",
+    q:"How do you calculate real development capacity when team members multitask across several projects? (Advanced)",
+    keywords:["theoretical vs practical","cognitive load interruptions","empirical observation","cycle time lengthens","smaller stories fragmented availability","limit concurrent projects","WIP limits focus agreements","real delivery patterns"],
+    model:"The gap between theoretical and practical capacity is significant in multitasking environments. Cognitive load, competing priorities, and coordination overhead reduce effective output far below planned allocation. An employee allocated 50% may produce equivalent of 20-25% focused work. The most reliable approach is empirical observation — track actual delivery across stable multitasking conditions to establish a true baseline. Prefer smaller stories that require shorter focused attention spans. Structurally, the goal is minimizing context switching through WIP limits and reducing concurrent project count."
+  },
+  {
+    id:47, tag:"Velocity & Quality",
+    q:"How do you incorporate defect workload from previous sprints into velocity? (Team practice perspective)",
+    keywords:["bypass estimation distorts","quality debt not productivity","Product Owner capacity awareness","root cause systemic","forecasting improves with quality","DoD consistent","unplanned high priority","architectural stability"],
+    model:"Never bypass estimation for defects — doing so makes work invisible and distorts velocity without adjusting forecasts. High defect velocity may look stable on the surface but actually reveals quality debt. The PO must clearly understand that sprint capacity consumed by defects isn't delivering new features. In retrospectives, investigate systemic causes: unclear acceptance criteria, insufficient testing, architectural instability, or weak DoD adherence. As quality stabilizes through systemic improvement, defect load becomes manageable and forecasting accuracy improves significantly."
+  },
+  {
+    id:48, tag:"Value Delivery",
+    q:"What do you do when a team delivers high velocity but low business value?",
+    keywords:["misalignment execution product objectives","Product Owner prioritization","customer needs validation","DoD business validation","value-based metrics","feature adoption user satisfaction","output vs outcome","backlog quality"],
+    model:"High velocity with low business value signals a misalignment between execution and product objectives. The root cause is usually in prioritization — the backlog isn't reflecting genuine business value. Engage the Product Owner to review and reorder the backlog based on customer impact rather than convenience or internal preferences. Examine whether completed work genuinely addresses customer needs — weak user research and incomplete acceptance criteria often lead to technically complete but valueless increments. Update the DoD to include business validation steps. Shift leadership metrics from velocity to feature adoption, customer satisfaction, and product goal achievement."
+  },
+  {
+    id:49, tag:"Measurement",
+    q:"How do you measure long-term team improvement when velocity fluctuates across sprints?",
+    keywords:["velocity not reliable alone","cycle time decreasing","throughput consistency","defect rate reduction","predictability within commitments","morale cross-functional growth","flow and quality","broader context"],
+    model:"Velocity fluctuation is normal and not alone a reliable improvement indicator. Long-term improvement is better measured through: cycle time trends (is it stabilizing or decreasing?), throughput consistency, defect rate reduction and shorter resolution times, and predictability (does the team consistently deliver within its forecast?). Team maturity signals — cross-functional capability growth, shared ownership, and improved morale — are equally important. True improvement shows across flow, quality, and predictability together, not just a rising velocity number."
+  },
+  {
+    id:50, tag:"Risk Management",
+    q:"Can velocity act as an early warning indicator for delivery risk? How?",
+    keywords:["trend analysis","sudden sustained drop","erratic patterns instability","multitasking unplanned work","cycle time defect rates WIP","leading indicator","combined metrics","early intervention"],
+    model:"Velocity can serve as an early warning indicator when evaluated as part of a broader metrics ecosystem. A sudden or sustained velocity drop may signal emerging impediments: unclear requirements, architectural complications, unresolved dependencies, or quality issues. Erratic spike-and-dip patterns across sprints indicate instability in refinement or inconsistent story slicing. Declining velocity alongside increasing unplanned work reveals poor backlog discipline or external interruptions. Velocity is most powerful combined with cycle time, defect rates, and WIP analysis — together they enable early intervention and help stabilize long-term delivery predictability."
+  }
+];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let sessionQs = [], currentIdx = 0, sessionLog = [];
+let timerInterval = null, timeLeft = 120;
+const TIMER_MAX = 120;
+
+// ══════════════════════════════════════════════════════
+// localStorage helpers
+// ══════════════════════════════════════════════════════
+function getSeen() {
+  try { return new Set(JSON.parse(localStorage.getItem('dojo_seen') || '[]')); }
+  catch { return new Set(); }
+}
+function saveSeen(set) { localStorage.setItem('dojo_seen', JSON.stringify([...set])); }
+function getBest() { return parseFloat(localStorage.getItem('dojo_best') || '0'); }
+function saveBest(v) { localStorage.setItem('dojo_best', v); }
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goHome() {
+  clearInterval(timerInterval);
+  updateHomeStats();
+  show('home');
+}
+
+function updateHomeStats() {
+  const seen = getSeen();
+  const pct = Math.round((seen.size / QUESTIONS.length) * 100);
+  document.getElementById('homeFill').style.width = pct + '%';
+  document.getElementById('homePct').textContent = `${seen.size} of ${QUESTIONS.length} questions seen`;
+  const best = getBest();
+  document.getElementById('bestNote').textContent = best > 0 ? `Personal best session: ${best.toFixed(0)} avg score` : '';
+}
+
+// ══════════════════════════════════════════════════════
+// SESSION
+// ══════════════════════════════════════════════════════
+function startSession() {
+  const seen = getSeen();
+  const unseen = QUESTIONS.filter(q => !seen.has(q.id));
+  const pool = unseen.length >= 10 ? unseen : [...unseen, ...QUESTIONS.filter(q => seen.has(q.id))];
+  // Shuffle pool
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  sessionQs = pool.slice(0, 10);
+  currentIdx = 0;
+  sessionLog = [];
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const q = sessionQs[currentIdx];
+  document.getElementById('roundNum').textContent = `${String(currentIdx + 1).padStart(2, '0')} / 10`;
+  document.getElementById('qTag').textContent = q.tag;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('answerArea').value = '';
+  document.getElementById('wordCount').textContent = '0 words';
+  document.getElementById('wordCount').className = 'word-count';
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('explanationBox') && (document.getElementById('explanationBox').style.display = 'none');
+  show('question');
+  startTimer();
+}
+
+// ══════════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════════
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = TIMER_MAX;
+  updateTimerDisplay();
+  document.getElementById('timerBar').style.width = '100%';
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    const pct = (timeLeft / TIMER_MAX) * 100;
+    document.getElementById('timerBar').style.width = pct + '%';
+    if (timeLeft <= 0) { clearInterval(timerInterval); autoSubmit(); }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const el = document.getElementById('timerNum');
+  el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+  el.className = 'timer-num' + (timeLeft <= 20 ? ' crit' : timeLeft <= 45 ? ' warn' : '');
+}
+
+function autoSubmit() {
+  const answer = document.getElementById('answerArea').value.trim();
+  if (answer.length < 5) {
+    document.getElementById('answerArea').value = '[No answer submitted — time expired]';
+  }
+  submitAnswer();
+}
+
+// ══════════════════════════════════════════════════════
+// TYPING
+// ══════════════════════════════════════════════════════
+function onType() {
+  const text = document.getElementById('answerArea').value;
+  const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+  const wEl = document.getElementById('wordCount');
+  wEl.textContent = words + ' words';
+  wEl.className = 'word-count' + (words >= 60 && words <= 160 ? ' ideal' : words > 200 ? ' long' : '');
+  document.getElementById('submitBtn').disabled = words < 5;
+}
+
+// ══════════════════════════════════════════════════════
+// SCORING
+// ══════════════════════════════════════════════════════
+function scoreAnswer(answer, question) {
+  const answerLower = answer.toLowerCase();
+  const words = answer.trim().split(/\s+/).filter(w => w.length > 0);
+  const wordCount = words.length;
+
+  // 1. Content (60 pts)
+  const hits = [], misses = [];
+  question.keywords.forEach(kw => {
+    const kwParts = kw.toLowerCase().split(' ');
+    const matched = kwParts.every(part => answerLower.includes(part));
+    (matched ? hits : misses).push(kw);
+  });
+  const contentScore = Math.round((hits.length / question.keywords.length) * 60);
+
+  // 2. Conciseness (20 pts)
+  let conciseScore;
+  if (wordCount < 15) conciseScore = 2;
+  else if (wordCount < 40) conciseScore = 10;
+  else if (wordCount <= 160) conciseScore = 20;
+  else if (wordCount <= 220) conciseScore = 14;
+  else if (wordCount <= 300) conciseScore = 8;
+  else conciseScore = 3;
+
+  // 3. Structure (20 pts) — STAR indicators
+  const contextWords = ['when','situation','context','faced','encountered','team was','we had','during','in my','scenario','case','example'];
+  const actionWords = ['facilitated','implemented','introduced','coached','suggested','organized','created','addressed','worked','applied','used','i ','we ','our ','led','guided'];
+  const resultWords = ['result','outcome','improved','increased','reduced','led to','enabled','helped','impact','effect','therefore','because','this means','so that','consequently'];
+  const hasC = contextWords.some(w => answerLower.includes(w));
+  const hasA = actionWords.some(w => answerLower.includes(w));
+  const hasR = resultWords.some(w => answerLower.includes(w));
+  const structureScore = (hasC ? 7 : 0) + (hasA ? 7 : 0) + (hasR ? 6 : 0);
+
+  return { total: contentScore + conciseScore + structureScore, contentScore, conciseScore, structureScore, hits, misses, wordCount };
+}
+
+function getGrade(score) {
+  if (score >= 85) return 'A';
+  if (score >= 70) return 'B';
+  if (score >= 55) return 'C';
+  return 'D';
+}
+
+function getScoreClass(score) {
+  if (score >= 85) return 'excellent';
+  if (score >= 70) return 'good';
+  if (score >= 55) return 'fair';
+  return 'poor';
+}
+
+// ══════════════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════════════
+function submitAnswer() {
+  clearInterval(timerInterval);
+  const answer = document.getElementById('answerArea').value;
+  const q = sessionQs[currentIdx];
+  const result = scoreAnswer(answer, q);
+
+  // Mark as seen
+  const seen = getSeen();
+  seen.add(q.id);
+  saveSeen(seen);
+
+  // Log
+  sessionLog.push({ q: q.q, score: result.total });
+
+  // Render result
+  const grade = getGrade(result.total);
+  const cls = getScoreClass(result.total);
+
+  document.getElementById('scoreBig').textContent = result.total;
+  document.getElementById('scoreBig').className = 'score-big ' + cls;
+  document.getElementById('gradeStamp').textContent = grade;
+  document.getElementById('gradeStamp').className = 'grade-stamp ' + grade;
+
+  // Bars
+  document.getElementById('scoreContent').textContent = `${result.contentScore} / 60`;
+  document.getElementById('scoreConcise').textContent = `${result.conciseScore} / 20`;
+  document.getElementById('scoreStructure').textContent = `${result.structureScore} / 20`;
+  setTimeout(() => {
+    document.getElementById('barContent').style.width = (result.contentScore / 60 * 100) + '%';
+    document.getElementById('barConcise').style.width = (result.conciseScore / 20 * 100) + '%';
+    document.getElementById('barStructure').style.width = (result.structureScore / 20 * 100) + '%';
+  }, 100);
+
+  // Keywords
+  document.getElementById('kwHits').innerHTML = result.hits.map(k => `<span class="kw-chip kw-hit">${k}</span>`).join('');
+  document.getElementById('kwMisses').innerHTML = result.misses.map(k => `<span class="kw-chip kw-miss">${k}</span>`).join('');
+
+  // Model answer
+  document.getElementById('modelText').textContent = q.model;
+
+  // Next button label
+  const isLast = currentIdx === 9;
+  document.getElementById('nextBtn').textContent = isLast ? 'VIEW DEBRIEF →' : 'NEXT CHALLENGE →';
+
+  // Reset bar
+  document.getElementById('timerBar').style.width = '0%';
+  document.getElementById('timerBar').style.background = '#222';
+
+  show('result');
+}
+
+// ══════════════════════════════════════════════════════
+// NEXT / SUMMARY
+// ══════════════════════════════════════════════════════
+function nextQuestion() {
+  currentIdx++;
+  if (currentIdx >= 10) {
+    showSummary();
+  } else {
+    document.getElementById('timerBar').style.background = 'var(--gold)';
+    loadQuestion();
+  }
+}
+
+function showSummary() {
+  const avg = sessionLog.reduce((s, l) => s + l.score, 0) / sessionLog.length;
+  const best = getBest();
+  if (avg > best) saveBest(avg);
+
+  document.getElementById('sessionScore').textContent = avg.toFixed(0);
+  document.getElementById('sessionAvg').textContent = 'average score · ' + getGrade(avg) + ' grade';
+
+  const logEl = document.getElementById('qLogList');
+  logEl.innerHTML = sessionLog.map((item, i) => {
+    const cls = getScoreClass(item.score);
+    const colors = { excellent: '#00c48c', good: '#f0a500', fair: '#e17055', poor: '#e05260' };
+    return `<div class="q-log-row">
+      <div class="q-log-num">${i + 1}</div>
+      <div class="q-log-q">${item.q}</div>
+      <div class="q-log-score" style="color:${colors[cls]}">${item.score}</div>
+    </div>`;
+  }).join('');
+
+  show('summary');
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+window.onload = updateHomeStats;
+</script>
+</body>
+</html>
